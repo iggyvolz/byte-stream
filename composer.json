@@ -26,7 +26,7 @@
         }
     ],
     "require": {
-        "amphp/amp": "^2"
+        "amphp/amp": "dev-streams as 2.6"
     },
     "require-dev": {
         "amphp/phpunit-util": "^1",

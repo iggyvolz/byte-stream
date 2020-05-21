@@ -4,24 +4,24 @@ namespace Amp\ByteStream;
 
 use Amp\Deferred;
 use Amp\Failure;
-use Amp\Iterator;
 use Amp\Promise;
+use Amp\Stream;
 
-final class IteratorStream implements InputStream
+final class StreamConverter implements InputStream
 {
-    /** @var Iterator<string> */
-    private $iterator;
+    /** @var Stream<string> */
+    private $stream;
     /** @var \Throwable|null */
     private $exception;
     /** @var bool */
     private $pending = false;
 
     /**
-     * @psalm-param Iterator<string> $iterator
+     * @psalm-param Stream<string> $iterator
      */
-    public function __construct(Iterator $iterator)
+    public function __construct(Stream $stream)
     {
-        $this->iterator = $iterator;
+        $this->stream = $stream;
     }
 
     /** @inheritdoc */
@@ -39,15 +39,13 @@ final class IteratorStream implements InputStream
         /** @var Deferred<string|null> $deferred */
         $deferred = new Deferred;
 
-        $this->iterator->advance()->onResolve(function ($error, $hasNextElement) use ($deferred) {
+        $this->stream->continue()->onResolve(function ($error, $chunk) use ($deferred) {
             $this->pending = false;
 
             if ($error) {
                 $this->exception = $error;
                 $deferred->fail($error);
-            } elseif ($hasNextElement) {
-                $chunk = $this->iterator->getCurrent();
-
+            } elseif ($chunk !== null) {
                 if (!\is_string($chunk)) {
                     $this->exception = new StreamException(\sprintf(
                         "Unexpected iterator value of type '%s', expected string",
